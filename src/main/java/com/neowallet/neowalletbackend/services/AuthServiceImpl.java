@@ -15,25 +15,21 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements AuthService{
 
     private final UserRepository userRepository;
     private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
+
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
 
-    public AuthServiceImpl(UserRepository userRepository, UserService userService, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
+    public AuthServiceImpl(UserRepository userRepository, UserService userService, AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
         this.userRepository = userRepository;
         this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
     }
@@ -63,6 +59,21 @@ public class AuthServiceImpl implements AuthService{
 
     @Override
     public JwtResponseLogin loginUser(LoginRequest request) {
-        return null;
+        Authentication authentication=authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        UserDetails userDetails= (UserDetails) authentication.getPrincipal();
+
+        User user=userRepository.findByEmail(request.getEmail()).orElseThrow(()-> new UsernameNotFoundException("Cannot Find User!!"));
+        String jwtToken= jwtUtils.generateToken(userDetails);
+        return new JwtResponseLogin(
+                userDetails.getUsername(),
+                jwtToken,
+                user.getRoles()
+        );
     }
 }
