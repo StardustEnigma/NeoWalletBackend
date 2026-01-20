@@ -28,10 +28,20 @@ public class Transaction {
     private TransactionStatus transactionStatus;
 
     @OneToOne
-    @JoinColumn(name = "id",nullable = false)
+    @JoinColumn(name = "idempotency_key_id",
+            referencedColumnName = "id",
+            nullable = false,
+            unique = true)
     private IdempotencyKey key;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wallet_id",
+            referencedColumnName = "walletId",
+            nullable = false)
+    private Wallet wallet;
+
 
 }
